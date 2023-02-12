@@ -29,19 +29,18 @@ def framed_boundary_images(images: Union[np.ndarray, torch.Tensor],
            b_image: Image with boundaries.
 
     """
-
     images = to_numpy(images).copy()
     masks = to_numpy(patch_classifications).copy()
     image_classifications = to_numpy(image_classifications).copy()
 
-    b_images = boundary_images(images, masks, boundary_color=boundary_color)
+    b_images  , boundary = boundary_images(images, masks, boundary_color=boundary_color)
     framed_b_images = frame_by_anomalies(
         b_images,
         image_classifications,
         padding=padding
     )
 
-    return np.array(framed_b_images)
+    return np.array(framed_b_images) , boundary
 
 
 def boundary_images(images: Union[np.ndarray, torch.Tensor],
@@ -68,7 +67,10 @@ def boundary_images(images: Union[np.ndarray, torch.Tensor],
     b_images = [boundary_image(image, masks[i], boundary_color=boundary_color)
                 for i, image in enumerate(images)]
 
-    return np.array(b_images)
+                
+    boundary = [boundaries(image, masks[i], boundary_color=boundary_color)
+                for i, image in enumerate(images)]
+    return np.array(b_images) , boundary
 
 
 def boundary_image(image: Union[np.ndarray, torch.Tensor],
@@ -98,3 +100,33 @@ def boundary_image(image: Union[np.ndarray, torch.Tensor],
     b_image = composite_image(image, layer_two, found_boundaries)
 
     return b_image
+
+
+
+def boundaries(image: Union[np.ndarray, torch.Tensor],
+                   patch_classification: Union[np.ndarray, torch.Tensor],
+                   boundary_color: Tuple[int, int, int] = (255, 0, 0)
+                   ) -> np.ndarray:
+    """
+       Draw boundaries around masked areas on image.
+
+       Args:
+           image: Image on which to draw boundaries.
+           patch_classification: Mask defining the areas.
+           boundary_color: Color of boundaries.
+
+       Returns:
+           b_image: Image with boundaries.
+
+    """
+
+    image = to_numpy(image).copy()
+    mask = to_numpy(patch_classification).copy()
+
+    found_boundaries = find_boundaries(mask).astype(np.uint8)
+    # layer_two = np.zeros(image.shape, dtype=np.uint8)
+    # layer_two[:] = boundary_color
+
+    # b_image = composite_image(image, layer_two, found_boundaries)
+
+    return found_boundaries
